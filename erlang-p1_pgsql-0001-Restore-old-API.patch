@@ -1,0 +1,136 @@
+From: Peter Lemenkov <lemenkov@gmail.com>
+Date: Sat, 4 Jun 2016 11:28:11 +0300
+Subject: [PATCH] Restore old API
+
+Signed-off-by: Peter Lemenkov <lemenkov@gmail.com>
+
+diff --git a/src/pgsql_proto.erl b/src/pgsql_proto.erl
+index d62cccd..9d606b7 100644
+--- a/src/pgsql_proto.erl
++++ b/src/pgsql_proto.erl
+@@ -50,6 +50,7 @@
+ 	 terminate/2]).
+ 
+ %% For protocol unwrapping, pgsql_tcp for example.
++-export([decode_packet/2]).
+ -export([decode_packet/3]).
+ -export([encode_message/2]).
+ -export([encode/2]).
+@@ -560,6 +561,10 @@ process_execute_resultset(Sock, Types, Log, AsBin) ->
+ 	    exit(Any)
+     end.
+ 
++decode_packet(Code, Packet) ->
++    error_logger:warning_msg("Deprecated API - pgsql_proto:decode_packet/2~n"),
++    decode_packet(Code, Packet, false).
++
+ %% With a message type Code and the payload Packet apropriate
+ %% decoding procedure can proceed.
+ decode_packet(Code, Packet, AsBin) ->
+diff --git a/src/pgsql_tcp.erl b/src/pgsql_tcp.erl
+index 2174025..040dad9 100644
+--- a/src/pgsql_tcp.erl
++++ b/src/pgsql_tcp.erl
+@@ -7,6 +7,7 @@
+ 
+ -behaviour(gen_server).
+ 
++-export([start/2, start_link/2]).
+ -export([start/3, start_link/3]).
+ 
+ %% gen_server callbacks
+@@ -19,9 +20,17 @@
+ 
+ -record(state, {socket, protopid, buffer, as_binary}).
+ 
++start(Sock, ProtoPid) ->
++    error_logger:warning_msg("Deprecated API - pgsql_tcp:start/2~n"),
++    start(Sock, ProtoPid, false).
++
+ start(Sock, ProtoPid, AsBin) ->
+     gen_server:start(?MODULE, [Sock, ProtoPid, AsBin], []).
+ 
++start_link(Sock, ProtoPid) ->
++    error_logger:warning_msg("Deprecated API - pgsql_tcp:start_link/2~n"),
++    start_link(Sock, ProtoPid, false).
++
+ start_link(Sock, ProtoPid, AsBin) ->
+     gen_server:start_link(?MODULE, [Sock, ProtoPid, AsBin], []).
+ 
+diff --git a/src/pgsql_util.erl b/src/pgsql_util.erl
+index 8b2559d..dce20c0 100644
+--- a/src/pgsql_util.erl
++++ b/src/pgsql_util.erl
+@@ -23,6 +23,8 @@
+ -export([errordesc/2]).
+ -export([to_integer/1, to_atom/1]).
+ 
++-export([coldescs/2, decode_row/2, errordesc/1, split_pair/1, split_pair_rec/1, to_string/1]).
++
+ -export([zip/2]).
+ 
+ %% Constructing authentication messages.
+@@ -103,11 +105,19 @@ make_pair(Key, Value) when is_binary(Key), is_binary(Value) ->
+     <<Key/binary, 0/integer, 
+      Value/binary, 0/integer>>.
+ 
++split_pair(Bin) when is_binary(Bin) ->
++    error_logger:warning_msg("Deprecated API - pgsql_util:split_pair/1~n"),
++    split_pair(Bin, false).
++
+ split_pair(Bin, AsBin) when is_binary(Bin) ->
+     split_pair(binary_to_list(Bin), AsBin);
+ split_pair(Str, AsBin)  ->
+     split_pair_rec(Str, norec, AsBin).
+ 
++split_pair_rec(Bin) when is_binary(Bin) ->
++    error_logger:warning_msg("Deprecated API - pgsql_util:split_pair_rec/1~n"),
++    split_pair_rec(Bin, false).
++
+ split_pair_rec(Bin, AsBin) when is_binary(Bin) ->
+     split_pair_rec(binary_to_list(Bin), AsBin);
+ split_pair_rec(Arg, AsBin)  ->
+@@ -143,6 +153,10 @@ count_string(<<0/integer, Rest/binary>>, N) ->
+ count_string(<<_C/integer, Rest/binary>>, N) ->
+     count_string(Rest, N+1).
+ 
++to_string(Bin) when is_binary(Bin) ->
++    error_logger:warning_msg("Deprecated API - pgsql_util:to_string/1~n"),
++    to_string(Bin, false).
++
+ to_string(Bin, AsBin) when is_binary(Bin) ->    
+     {Count, _} = count_string(Bin, 0),
+     <<String:Count/binary, _/binary>> = Bin,
+@@ -157,6 +171,10 @@ oids(<<>>, Oids) ->
+ oids(<<Oid:32/integer, Rest/binary>>, Oids) ->
+     oids(Rest, [Oid|Oids]).
+     
++coldescs(Bin, Descs) ->
++    error_logger:warning_msg("Deprecated API - pgsql_util:coldescs/2~n"),
++    coldescs(Bin, Descs, false).
++
+ coldescs(<<>>, Descs, _AsBin) ->
+     lists:reverse(Descs);
+ coldescs(Bin, Descs, AsBin) ->
+@@ -196,6 +214,10 @@ decode_descs(OidMap, [Col|ColTail], Descs) ->
+     OidName = dict:fetch(Oid, OidMap),
+     decode_descs(OidMap, ColTail, [{Name, Format, ColNumber, OidName, [], [], []}|Descs]).
+ 
++decode_row(Types, Values) ->
++    error_logger:warning_msg("Deprecated API - pgsql_util:decode_row/2~n"),
++    decode_row(Types, Values, false).
++
+ decode_row(Types, Values, AsBin) ->
+     decode_row(Types, Values, [], AsBin).
+ decode_row([], [], Out, _AsBin) ->
+@@ -233,6 +255,10 @@ decode_col({_Name, _Format, _ColNumber, numeric, _Size, _Modifier, _TableOID}, V
+ decode_col({_Name, _Format, _ColNumber, Oid, _Size, _Modifier, _TableOID}, Value, _AsBin) ->
+     {Oid, Value}.
+ 
++errordesc(Bin) ->
++    error_logger:warning_msg("Deprecated API - pgsql_util:errordesc/1~n"),
++    errordesc(Bin, false).
++
+ errordesc(Bin, AsBin) ->
+     errordesc(Bin, [], AsBin).
+ 
